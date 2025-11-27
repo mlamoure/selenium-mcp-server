@@ -22,9 +22,9 @@ RUN pip install --no-cache-dir -r requirements.txt && \
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
 USER appuser
 
-# Health check endpoint
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+# Health check - verify server is responding (FastMCP serves at /mcp)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD curl -sf http://localhost:8000/ > /dev/null || exit 1
 
 # Expose MCP HTTP port
 EXPOSE 8000

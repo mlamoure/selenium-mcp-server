@@ -66,4 +66,4 @@ jobs:
           url: 'https://semaphore.ansible.home.mikelamoureux.net/api/project/2/tasks'
           method: 'POST'
           customHeaders: '{"Content-Type": "application/json", "Authorization": "Bearer ${{ env.SEMAPHORE_TOKEN }}"}'
-          data: '{"template_id": 17, "environment": "{\"docker_host\": \"common-services.home.mikelamoureux.net\", \"restart_stack\": \"selenium-mcp-server\"}"}'
+          data: '{"template_id": 17, "environment": "{\"docker_host\": \"common-services.home.mikelamoureux.net\", \"restart_stack\": \"selenium\"}"}'
