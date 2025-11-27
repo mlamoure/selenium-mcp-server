@@ -9,12 +9,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Set working directory
 WORKDIR /app
 
-# Install Python dependencies
+# Copy project files and install package
+COPY pyproject.toml .
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy application code
 COPY src/ src/
+
+# Install the package (this makes selenium_mcp importable)
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir .
 
 # Create non-root user for security
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
