@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from typing import AsyncIterator
 
 from fastmcp import FastMCP
+from starlette.requests import Request
+from starlette.responses import JSONResponse, Response
 
 from .config import settings
 from .core.driver_factory import DriverFactory
@@ -151,6 +153,13 @@ async def setup_server(mcp: FastMCP) -> None:
 
 # Create the global server instance
 mcp = create_server()
+
+
+# Health check endpoint for Docker/Kubernetes health probes
+@mcp.custom_route("/health", methods=["GET"])
+async def health_check(request: Request) -> Response:
+    """Health check endpoint for container orchestration."""
+    return JSONResponse({"status": "ok"})
 
 
 def run_server() -> None:
