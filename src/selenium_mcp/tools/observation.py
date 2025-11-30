@@ -1,7 +1,6 @@
 """DOM observation and element query tools."""
 
 import base64
-import re
 from typing import Annotated, Optional, Literal
 from pydantic import Field
 from fastmcp import FastMCP, Context
@@ -14,6 +13,7 @@ from ..utils.element_resolver import (
     serialize_element,
     is_clickable,
 )
+from ..utils.dom_helpers import get_dom_content
 
 observation_router = FastMCP(
     name="ObservationTools",
@@ -68,25 +68,16 @@ async def get_dom(
 
         limit = max_chars or app_ctx.settings.dom_max_chars
 
-        # Get page source
-        html = await anyio.to_thread.run_sync(lambda: session.driver.page_source)
-
-        # Optionally strip scripts and styles
-        if strip_scripts_and_styles:
-            html = re.sub(r"<script[^>]*>.*?</script>", "", html, flags=re.DOTALL | re.IGNORECASE)
-            html = re.sub(r"<style[^>]*>.*?</style>", "", html, flags=re.DOTALL | re.IGNORECASE)
-
-        # Truncate if needed
-        truncated = len(html) > limit
-        if truncated:
-            html = html[:limit]
+        dom_content = await get_dom_content(
+            session.driver,
+            max_chars=limit,
+            strip_scripts_and_styles=strip_scripts_and_styles,
+        )
 
         return {
             "success": True,
             "session_id": session_id,
-            "html": html,
-            "truncated": truncated,
-            "total_length": len(html) if not truncated else f">{limit}",
+            **dom_content,
         }
 
     except Exception as e:

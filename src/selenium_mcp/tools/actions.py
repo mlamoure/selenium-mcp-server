@@ -11,6 +11,7 @@ from selenium.webdriver.support.ui import Select
 
 from ..utils.error_mapper import map_selenium_error, create_error_response
 from ..utils.element_resolver import get_by_strategy, resolve_element
+from ..utils.dom_helpers import get_dom_content
 
 actions_router = FastMCP(
     name="ActionTools",
@@ -76,6 +77,10 @@ async def click_element(
     ctx: Context,
     session_id: Annotated[str, Field(description="Active session ID")],
     element_id: Annotated[str, Field(description="Element ID from query_elements")],
+    return_dom: Annotated[
+        bool,
+        Field(description="Return DOM content after clicking"),
+    ] = False,
 ) -> dict:
     """
     Click on a previously queried element.
@@ -86,11 +91,13 @@ async def click_element(
     Args:
         session_id: Active session ID
         element_id: Element ID from a previous query_elements call
+        return_dom: If True, includes DOM content in response
 
     Returns:
-        Success status
+        Success status, optionally with DOM content
     """
     try:
+        app_ctx = get_context(ctx)
         session = get_session(ctx, session_id)
         element = session.get_element(element_id)
 
@@ -102,12 +109,21 @@ async def click_element(
         )
         await anyio.to_thread.run_sync(lambda: element.click())
 
-        return {
+        result = {
             "success": True,
             "session_id": session_id,
             "element_id": element_id,
             "action": "clicked",
         }
+
+        if return_dom:
+            dom_content = await get_dom_content(
+                session.driver,
+                max_chars=app_ctx.settings.dom_max_chars,
+            )
+            result["dom"] = dom_content
+
+        return result
 
     except Exception as e:
         error_code, message = map_selenium_error(e)

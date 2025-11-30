@@ -9,6 +9,7 @@ import anyio
 from ..core.exceptions import DomainNotAllowedError
 from ..utils.error_mapper import map_selenium_error, create_error_response
 from ..utils.guardrails import validate_domain, extract_domain
+from ..utils.dom_helpers import get_dom_content
 
 navigation_router = FastMCP(
     name="NavigationTools",
@@ -45,6 +46,10 @@ async def navigate(
     ctx: Context,
     session_id: Annotated[str, Field(description="Active session ID")],
     url: Annotated[str, Field(description="URL to navigate to")],
+    return_dom: Annotated[
+        bool,
+        Field(description="Return DOM content after navigation"),
+    ] = False,
 ) -> dict:
     """
     Navigate browser to the specified URL.
@@ -54,9 +59,10 @@ async def navigate(
     Args:
         session_id: Active session ID from create_session
         url: Full URL to navigate to (e.g., "https://example.com")
+        return_dom: If True, includes DOM content in response
 
     Returns:
-        Final URL (after redirects), page title, and ready state
+        Final URL (after redirects), page title, ready state, optionally DOM
     """
     try:
         app_ctx = get_context(ctx)
@@ -76,11 +82,20 @@ async def navigate(
 
         await ctx.info(f"Navigated to {state['url']}")
 
-        return {
+        result = {
             "success": True,
             "session_id": session_id,
             **state,
         }
+
+        if return_dom:
+            dom_content = await get_dom_content(
+                session.driver,
+                max_chars=app_ctx.settings.dom_max_chars,
+            )
+            result["dom"] = dom_content
+
+        return result
 
     except Exception as e:
         error_code, message = map_selenium_error(e)
