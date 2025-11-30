@@ -1,0 +1,74 @@
+# Docker Compose for Selenium MCP Server Development
+#
+# Usage:
+#   docker-compose up -d          # Start all services
+#   docker-compose logs -f        # Follow logs
+#   docker-compose down           # Stop all services
+#
+# The MCP server is available at: http://localhost:8000/mcp/
+# Selenium Grid UI is available at: http://localhost:4444
+
+services:
+  selenium-mcp:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - SELENIUM_MCP_SELENIUM_GRID_URL=http://selenium-hub:4444
+      - SELENIUM_MCP_MAX_CONCURRENT_SESSIONS=10
+      - SELENIUM_MCP_SESSION_MAX_LIFETIME_SECONDS=900
+      - SELENIUM_MCP_SESSION_MAX_IDLE_SECONDS=300
+      - SELENIUM_MCP_LOG_LEVEL=INFO
+      # Uncomment to restrict allowed domains:
+      # - SELENIUM_MCP_ALLOWED_DOMAINS=example.com,test.local
+    depends_on:
+      selenium-hub:
+        condition: service_healthy
+    restart: unless-stopped
+    # Allow 30s for graceful shutdown (close browser sessions)
+    stop_grace_period: 30s
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  selenium-hub:
+    image: selenium/hub:4.25
+    ports:
+      - "4442:4442"
+      - "4443:4443"
+      - "4444:4444"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4444/status"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  chrome-node:
+    image: selenium/node-chrome:4.25
+    shm_size: 2gb
+    depends_on:
+      selenium-hub:
+        condition: service_healthy
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+      - SE_NODE_MAX_SESSIONS=4
+      - SE_NODE_OVERRIDE_MAX_SESSIONS=true
+
+  # Optional: Add Firefox node for multi-browser testing
+  # firefox-node:
+  #   image: selenium/node-firefox:4.25
+  #   shm_size: 2gb
+  #   depends_on:
+  #     selenium-hub:
+  #       condition: service_healthy
+  #   environment:
+  #     - SE_EVENT_BUS_HOST=selenium-hub
+  #     - SE_EVENT_BUS_PUBLISH_PORT=4442
+  #     - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+  #     - SE_NODE_MAX_SESSIONS=4
