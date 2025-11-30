@@ -2,6 +2,14 @@
 
 A Model Context Protocol (MCP) server that provides browser automation capabilities via Selenium Grid. AI agents can drive web browsers step-by-step using MCP tools instead of writing Selenium scripts directly.
 
+## Architecture
+
+Built with [FastMCP 2.0](https://github.com/jlowin/fastmcp) using **Streamable HTTP transport** for self-hosted deployment. Deploy once on your infrastructure and connect from any MCP client remotely.
+
+- **Streamable HTTP** - Native HTTP transport with streaming support
+- **Selenium Grid Backend** - Separates browser instances from the MCP server for independent scaling
+- **Centralized Endpoint** - Single server serves multiple AI agents/clients
+
 ## Features
 
 - **35+ MCP Tools** for complete browser automation
