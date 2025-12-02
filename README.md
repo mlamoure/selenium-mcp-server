@@ -21,15 +21,61 @@ Built with [FastMCP 2.0](https://github.com/jlowin/fastmcp) using **Streamable H
 
 ## Quick Start
 
-### Using Docker Compose (Recommended)
+### Deploy from Container Registry (Recommended)
+
+Deploy directly without cloning the repository. Create a `docker-compose.yml`:
+
+```yaml
+services:
+  selenium-mcp:
+    image: ghcr.io/mlamoure/selenium-mcp-server:latest
+    ports:
+      - "8000:8000"
+    environment:
+      - SELENIUM_MCP_SELENIUM_GRID_URL=http://selenium-hub:4444
+    depends_on:
+      selenium-hub:
+        condition: service_healthy
+    restart: unless-stopped
+
+  selenium-hub:
+    image: selenium/hub:4.25
+    ports:
+      - "4444:4444"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4444/status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  chrome-node:
+    image: selenium/node-chrome:4.25
+    shm_size: 2g
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+      - SE_NODE_MAX_SESSIONS=4
+    depends_on:
+      selenium-hub:
+        condition: service_healthy
+```
 
 ```bash
-# Clone and start the server with Selenium Grid
-git clone <repo-url>
+docker-compose up -d
+
+# MCP server: http://localhost:8000/mcp/
+# Selenium Grid UI: http://localhost:4444
+```
+
+### Using Docker Compose (From Source)
+
+```bash
+git clone https://github.com/mlamoure/selenium-mcp-server.git
 cd selenium-mcp-server
 docker-compose up -d
 
-# The MCP server is available at: http://localhost:8000/mcp/
+# MCP server: http://localhost:8000/mcp/
 # Selenium Grid UI: http://localhost:4444
 ```
 
