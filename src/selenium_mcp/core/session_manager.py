@@ -40,6 +40,8 @@ class BrowserSession:
     created_at: float
     last_activity: float
     capabilities: dict = field(default_factory=dict)
+    record_video: bool = False  # Whether video recording is enabled
+    selenium_session_id: Optional[str] = None  # Grid's internal session ID for video retrieval
     _element_map: Dict[str, WebElement] = field(default_factory=dict)
     _element_counter: int = field(default=0)
     _lock: asyncio.Lock = field(default_factory=asyncio.Lock)
@@ -124,6 +126,18 @@ class BrowserSession:
             "last_activity": self.last_activity,
             "element_count": self.element_count,
             "current_url": self.driver.current_url if self.driver else None,
+            "record_video": self.record_video,
+            "selenium_session_id": self.selenium_session_id,
+        }
+
+    def get_grid_capabilities(self) -> dict:
+        """Extract Selenium Grid specific capabilities (se: prefixed)."""
+        return {
+            "se:cdp": self.capabilities.get("se:cdp"),
+            "se:vnc": self.capabilities.get("se:vnc"),
+            "se:vncEnabled": self.capabilities.get("se:vncEnabled"),
+            "se:vncLocalAddress": self.capabilities.get("se:vncLocalAddress"),
+            "se:recordVideo": self.capabilities.get("se:recordVideo"),
         }
 
 
@@ -156,6 +170,7 @@ class SessionManager:
         viewport_width: Optional[int] = None,
         viewport_height: Optional[int] = None,
         extra_capabilities: Optional[dict] = None,
+        record_video: bool = False,
     ) -> BrowserSession:
         """
         Create a new browser session.
@@ -166,6 +181,7 @@ class SessionManager:
             viewport_width: Optional viewport width
             viewport_height: Optional viewport height
             extra_capabilities: Additional browser capabilities
+            record_video: Whether video recording is enabled for this session
 
         Returns:
             New BrowserSession
@@ -196,10 +212,12 @@ class SessionManager:
                 created_at=now,
                 last_activity=now,
                 capabilities=driver.capabilities or {},
+                record_video=record_video,
+                selenium_session_id=driver.session_id,
             )
 
             self._sessions[session_id] = session
-            logger.info(f"Created session {session_id} with {browser}")
+            logger.info(f"Created session {session_id} with {browser} (recording={record_video})")
 
             return session
 
