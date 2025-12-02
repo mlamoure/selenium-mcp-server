@@ -29,6 +29,10 @@ class Settings(BaseSettings):
     session_max_idle_seconds: int = 300  # 5 minutes
     sweep_interval_seconds: int = 60  # 1 minute
 
+    # Video Recording
+    recording_default: bool = True  # Default recording state when not specified
+    recording_force: bool = False  # When True, ignores client request and uses recording_default
+
     # Domain guardrails (comma-separated list, empty = allow all)
     allowed_domains: Optional[str] = None
 

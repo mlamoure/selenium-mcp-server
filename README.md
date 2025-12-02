@@ -95,8 +95,9 @@ python -m selenium_mcp
 ## Tool Categories
 
 ### Session Management
-- `create_session` - Create a new browser session
+- `create_session` - Create a new browser session (with optional video recording)
 - `close_session` - Close a browser session
+- `get_session_info` - Get detailed session info including recording status
 - `list_sessions` - List all active sessions
 - `ping` - Health check
 
@@ -146,18 +147,50 @@ Configure via environment variables (prefix: `SELENIUM_MCP_`):
 | `MAX_CONCURRENT_SESSIONS` | Maximum simultaneous sessions | `10` |
 | `SESSION_MAX_LIFETIME_SECONDS` | Session auto-close timeout | `900` |
 | `SESSION_MAX_IDLE_SECONDS` | Idle session timeout | `300` |
+| `RECORDING_DEFAULT` | Default video recording state | `true` |
+| `RECORDING_FORCE` | Force recording setting (ignore client) | `false` |
 | `ALLOWED_DOMAINS` | Comma-separated allowed domains | (all allowed) |
 | `DOM_MAX_CHARS` | Max chars for get_dom | `20000` |
 | `DEFAULT_WAIT_TIMEOUT_MS` | Default wait timeout | `10000` |
 | `HOST` | Server bind address | `0.0.0.0` |
 | `PORT` | Server port | `8000` |
 
+## Video Recording
+
+When using Selenium Grid with video recording sidecars, sessions can be recorded for debugging and review. Recording is controlled via the `se:recordVideo` Selenium capability.
+
+### Configuration
+
+- `RECORDING_DEFAULT` - When `true` (default), sessions record video unless explicitly disabled
+- `RECORDING_FORCE` - When `true`, ignores client preferences and uses `RECORDING_DEFAULT` for all sessions
+
+### Usage
+
+```python
+# Create session with recording (uses server default if not specified)
+result = await client.call_tool("create_session", {
+    "browser": "chrome",
+    "record_video": True  # Optional: explicitly enable/disable
+})
+
+# Response includes recording info
+# {
+#   "session_id": "sess_abc123",
+#   "record_video": true,
+#   "selenium_session_id": "abc123-def456-..."  # Grid session ID for video retrieval
+# }
+```
+
+### Video Retrieval
+
+The `selenium_session_id` in the response is the Selenium Grid's internal session ID. Use this ID to locate recorded videos in your Grid's video storage. The exact retrieval method depends on your Grid configuration.
+
 ## Example Usage
 
 ```python
 # Typical AI agent workflow:
 
-# 1. Create a session
+# 1. Create a session (recording enabled by default)
 result = await client.call_tool("create_session", {"browser": "chrome"})
 session_id = result["session_id"]
 

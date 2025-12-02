@@ -83,6 +83,81 @@ class TestBrowserSession:
         assert result["element_count"] == 1
         assert "created_at" in result
         assert "last_activity" in result
+        assert "record_video" in result
+        assert "selenium_session_id" in result
+
+    def test_record_video_default_false(self, mock_webdriver):
+        """Should default record_video to False."""
+        session = BrowserSession(
+            session_id="test-id",
+            driver=mock_webdriver,
+            browser="chrome",
+            created_at=time.time(),
+            last_activity=time.time(),
+        )
+        assert session.record_video is False
+
+    def test_record_video_stored(self, mock_webdriver):
+        """Should store record_video value."""
+        session = BrowserSession(
+            session_id="test-id",
+            driver=mock_webdriver,
+            browser="chrome",
+            created_at=time.time(),
+            last_activity=time.time(),
+            record_video=True,
+        )
+        assert session.record_video is True
+
+    def test_selenium_session_id_stored(self, mock_webdriver):
+        """Should store selenium_session_id."""
+        session = BrowserSession(
+            session_id="test-id",
+            driver=mock_webdriver,
+            browser="chrome",
+            created_at=time.time(),
+            last_activity=time.time(),
+            selenium_session_id="selenium-abc-123",
+        )
+        assert session.selenium_session_id == "selenium-abc-123"
+
+    def test_to_dict_includes_recording_fields(self, mock_webdriver):
+        """Should include recording fields in to_dict()."""
+        session = BrowserSession(
+            session_id="test-id",
+            driver=mock_webdriver,
+            browser="chrome",
+            created_at=time.time(),
+            last_activity=time.time(),
+            record_video=True,
+            selenium_session_id="selenium-abc-123",
+        )
+        result = session.to_dict()
+        assert result["record_video"] is True
+        assert result["selenium_session_id"] == "selenium-abc-123"
+
+    def test_get_grid_capabilities(self, mock_webdriver):
+        """Should extract se: prefixed capabilities."""
+        mock_webdriver.capabilities = {
+            "browserName": "chrome",
+            "se:cdp": "ws://node:4444/session/abc/cdp",
+            "se:vnc": "ws://node:4444/session/abc/vnc",
+            "se:vncEnabled": True,
+            "se:recordVideo": True,
+        }
+        session = BrowserSession(
+            session_id="test-id",
+            driver=mock_webdriver,
+            browser="chrome",
+            created_at=time.time(),
+            last_activity=time.time(),
+            capabilities=mock_webdriver.capabilities,
+        )
+        grid_caps = session.get_grid_capabilities()
+        assert grid_caps["se:cdp"] == "ws://node:4444/session/abc/cdp"
+        assert grid_caps["se:vnc"] == "ws://node:4444/session/abc/vnc"
+        assert grid_caps["se:vncEnabled"] is True
+        assert grid_caps["se:recordVideo"] is True
 
 
 class TestSessionManager:
